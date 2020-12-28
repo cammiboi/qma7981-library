@@ -10,7 +10,7 @@
 
 // private functions
 
-static void write_byte(uint8_t address, uint8_t data)
+void write_byte(uint8_t address, uint8_t data)
 {
     Wire.begin();
     Wire.beginTransmission(I2C_ADDRESS); // Initialize the Tx buffer
@@ -19,7 +19,7 @@ static void write_byte(uint8_t address, uint8_t data)
     Wire.endTransmission();              // Send the Tx buffer
 }
 
-static uint8_t read_byte(uint8_t address)
+uint8_t read_byte(uint8_t address)
 {
     Wire.begin();
     Wire.beginTransmission(I2C_ADDRESS); // Initialize the Tx buffer
@@ -30,7 +30,7 @@ static uint8_t read_byte(uint8_t address)
     return data;                         // Return data read from slave register
 }
 
-static int16_t read_accel_axis(uint8_t address_msb)
+int16_t read_accel_axis(uint8_t address_msb)
 {
     Wire.begin();
     Wire.beginTransmission(I2C_ADDRESS);
@@ -42,23 +42,23 @@ static int16_t read_accel_axis(uint8_t address_msb)
     return data;
 }
 
-static void set_bit(uint8_t *byte, uint8_t n, bool value)
+void set_bit(uint8_t *byte, uint8_t n, bool value)
 {
     *byte = (*byte & ~(1UL << n)) | (value << n);
 }
 
-static bool get_bit(uint8_t byte, uint8_t n)
+bool get_bit(uint8_t byte, uint8_t n)
 {
     return (byte >> n) & 1U;
 }
 
-static void soft_reset()
+void soft_reset()
 {
     write_byte(0x36, 0xB6);
     write_byte(0x36, 0x00);
 }
 
-static void set_interrupt_all_latch(bool latch)
+void set_interrupt_all_latch(bool latch)
 {
     uint8_t data = read_byte(0x21);
     set_bit(&data, 0, latch);
@@ -66,7 +66,7 @@ static void set_interrupt_all_latch(bool latch)
     write_byte(0x21, data);
 }
 
-static void reset_motion_detector(bool any_motion, bool significant_motion, bool no_motion)
+void reset_motion_detector(bool any_motion, bool significant_motion, bool no_motion)
 {
     // to reset, write 0 first
     uint8_t data = read_byte(0x30);
@@ -81,7 +81,7 @@ static void reset_motion_detector(bool any_motion, bool significant_motion, bool
     write_byte(0x30, data);
 }
 
-static void set_any_motion_axis(bool x_enabled, bool y_enabled, bool z_enabled)
+void set_any_motion_axis(bool x_enabled, bool y_enabled, bool z_enabled)
 {
     uint8_t data = read_byte(0x18);
     set_bit(&data, 0, x_enabled);
@@ -90,7 +90,7 @@ static void set_any_motion_axis(bool x_enabled, bool y_enabled, bool z_enabled)
     write_byte(0x18, data);
 }
 
-static void set_any_motion_number_of_samples(qma7981_any_motion_samples_t samples)
+void set_any_motion_number_of_samples(qma7981_any_motion_samples_t samples)
 {
     uint8_t data = read_byte(0x2C);
     data &= 0b11111100; // clear bits 1-0
@@ -98,12 +98,12 @@ static void set_any_motion_number_of_samples(qma7981_any_motion_samples_t sample
     write_byte(0x2C, data);
 }
 
-static void set_any_motion_threshold(uint8_t threshold)
+void set_any_motion_threshold(uint8_t threshold)
 {
     write_byte(0x2E, threshold);
 }
 
-static void set_no_motion_axis(bool x_enabled, bool y_enabled, bool z_enabled)
+void set_no_motion_axis(bool x_enabled, bool y_enabled, bool z_enabled)
 {
     uint8_t data = read_byte(0x18);
     set_bit(&data, 5, x_enabled);
@@ -112,7 +112,7 @@ static void set_no_motion_axis(bool x_enabled, bool y_enabled, bool z_enabled)
     write_byte(0x18, data);
 }
 
-static void set_no_motion_duration(qma7981_no_motion_duration_t duration)
+void set_no_motion_duration(qma7981_no_motion_duration_t duration)
 {
     uint8_t data = read_byte(0x2C);
     data &= 0b00000011; // clear bits 7-2
@@ -120,12 +120,12 @@ static void set_no_motion_duration(qma7981_no_motion_duration_t duration)
     write_byte(0x2C, data);
 }
 
-static void set_no_motion_threshold(uint8_t threshold)
+void set_no_motion_threshold(uint8_t threshold)
 {
     write_byte(0x2D, threshold);
 }
 
-static void set_any_or_significant_motion(bool significant_motion)
+void set_any_or_significant_motion(bool significant_motion)
 {
     uint8_t data = read_byte(0x2F);
     set_bit(&data, 0, significant_motion);
@@ -134,41 +134,60 @@ static void set_any_or_significant_motion(bool significant_motion)
 
 // public functions
 
-int16_t qma7981_get_accel_x()
+QMA7981::QMA7981()
+{
+}
+
+void QMA7981::initialize_default()
+{
+    delay(10);
+    soft_reset();
+    delay(10);
+    set_mode(MODE_ACTIVE);                  // bring out of sleep mode
+    set_clock_freq(CLK_50_KHZ);             // set digital clock freq
+    set_bandwidth(MCLK_DIV_BY_61455);       // set bandwitch (samples per sec)
+    set_full_scale_range(RANGE_2G);         // set full scale acceleration range
+    set_interrupt_all_latch(true);          // set interrupt pin to latch after interrupt until interrupt status read
+    set_interrupt_pin_1_type(false, false); // set interrupt pin type and logic level
+    // enable no motion and any motion interrupts to trigger int pin 1
+    set_interrupt_pin_1_source(false, false, false, false, true, true, false, true);
+}
+
+int16_t QMA7981::get_accel_x()
 {
     return read_accel_axis(0x01);
 }
 
-int16_t qma7981_get_accel_y()
+int16_t QMA7981::get_accel_y()
 {
     return read_accel_axis(0x03);
 }
 
-int16_t qma7981_get_accel_z()
+int16_t QMA7981::get_accel_z()
 {
     return read_accel_axis(0x05);
 }
 
-uint8_t qma7981_get_chip_id()
+uint8_t QMA7981::get_chip_id()
 {
     return read_byte(0x00);
 }
 
-void qma7981_set_full_scale_range(qma7981_full_scale_range_t range)
+void QMA7981::set_full_scale_range(qma7981_full_scale_range_t range)
 {
     uint8_t data = 0b11110000;
     data |= (range & 0b1111);
     write_byte(0x0F, data);
 }
 
-void qma7981_set_bandwidth(qma7981_bandwidth_t bandwidth)
+void QMA7981::set_bandwidth(qma7981_bandwidth_t bandwidth)
 {
     uint8_t data = 0b11100000;
     data |= (bandwidth & 0b111);
     write_byte(0x10, data);
 }
 
-void qma7981_set_clock_freq(qma7981_clock_freq freq)
+void QMA7981::set_clock_freq(qma7981_clock_freq_t freq)
 {
     uint8_t data = read_byte(0x11);
     // TODO T_RSTB_SINC_SEL<1:0, right now kept at default of 0
@@ -177,16 +196,16 @@ void qma7981_set_clock_freq(qma7981_clock_freq freq)
     write_byte(0x11, data);
 }
 
-void qma7981_set_mode(qma7981_mode_t mode)
+void QMA7981::set_mode(qma7981_mode_t mode)
 {
     uint8_t data = read_byte(0x11);
     set_bit(&data, 7, mode);
     write_byte(0x11, data);
 }
 
-void qma7981_set_interrupt_pin_1_source(bool significant_step, bool step_valid, bool hand_down,
-                                        bool hand_raise, bool significant_motion,
-                                        bool any_motion, bool data_ready, bool no_motion)
+void QMA7981::set_interrupt_pin_1_source(bool significant_step, bool step_valid, bool hand_down,
+                                         bool hand_raise, bool significant_motion,
+                                         bool any_motion, bool data_ready, bool no_motion)
 {
     uint8_t data = read_byte(0x19);
     set_bit(&data, 0, significant_motion);
@@ -203,7 +222,7 @@ void qma7981_set_interrupt_pin_1_source(bool significant_step, bool step_valid, 
     write_byte(0x1A, data);
 }
 
-void qma7981_set_interrupt_pin_1_type(bool open_drain, bool active_high)
+void QMA7981::set_interrupt_pin_1_type(bool open_drain, bool active_high)
 {
     uint8_t data = read_byte(0x20);
     set_bit(&data, 0, active_high);
@@ -211,9 +230,9 @@ void qma7981_set_interrupt_pin_1_type(bool open_drain, bool active_high)
     write_byte(0x20, data);
 }
 
-void qma7981_setup_any_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
-                                       qma7981_any_motion_samples_t samples,
-                                       uint8_t threshold)
+void QMA7981::setup_any_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
+                                        qma7981_any_motion_samples_t samples,
+                                        uint8_t threshold)
 {
     set_any_motion_axis(x_enabled, y_enabled, z_enabled);
     set_any_motion_number_of_samples(samples);
@@ -222,9 +241,9 @@ void qma7981_setup_any_motion_detector(bool x_enabled, bool y_enabled, bool z_en
     reset_motion_detector(true, false, false);
 }
 
-void qma7981_setup_no_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
-                                      qma7981_no_motion_duration_t duration,
-                                      uint8_t threshold)
+void QMA7981::setup_no_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
+                                       qma7981_no_motion_duration_t duration,
+                                       uint8_t threshold)
 {
     set_no_motion_axis(x_enabled, y_enabled, z_enabled);
     set_no_motion_duration(duration);
@@ -232,7 +251,7 @@ void qma7981_setup_no_motion_detector(bool x_enabled, bool y_enabled, bool z_ena
     reset_motion_detector(false, false, true);
 }
 
-qma7981_motion_detect_t qma7981_get_motion_detected()
+qma7981_motion_detect_t QMA7981::get_motion_detected()
 {
     uint8_t data = read_byte(0x09);
 
@@ -253,29 +272,18 @@ qma7981_motion_detect_t qma7981_get_motion_detected()
     return MOTION_DETECT_NOTHING;
 }
 
-void qma7981_disable_any_motion_detector()
+void QMA7981::disable_any_motion_detector()
 {
     set_any_motion_axis(false, false, false); // disable all 3 any motion detect axis
 }
 
-void qma7981_disable_no_motion_detector()
+void QMA7981::disable_no_motion_detector()
 {
     set_no_motion_axis(false, false, false); // disable all 3 any motion detect axis
 }
 
 void qma7981_setup_default()
 {
-    delay(10);
-    soft_reset();
-    delay(10);
-    qma7981_set_mode(MODE_ACTIVE);                  // bring out of sleep mode
-    qma7981_set_clock_freq(CLK_50_KHZ);             // set digital clock freq
-    qma7981_set_bandwidth(MCLK_DIV_BY_61455);       // set bandwitch (samples per sec)
-    qma7981_set_full_scale_range(RANGE_2G);         // set full scale acceleration range
-    set_interrupt_all_latch(true);                  // set interrupt pin to latch after interrupt until interrupt status read
-    qma7981_set_interrupt_pin_1_type(false, false); // set interrupt pin type and logic level
-    // enable no motion and any motion interrupts to trigger int pin 1
-    qma7981_set_interrupt_pin_1_source(false, false, false, false, true, true, false, true);
 }
 
 // TODO: add interrupt pin 2 set

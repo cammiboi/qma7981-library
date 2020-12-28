@@ -2,13 +2,9 @@
 #define QMA7981_H
 #include <Arduino.h>
 
-/*
-QMA7981 Accelerometer IC
-*/
-
 #define ADO 0 // I2C Address pin, 0 for low and 1 for high
 
-enum qma7981_full_scale_range_t : uint8_t
+enum qma7981_full_scale_range_t
 {
     RANGE_2G = 0b0001,
     RANGE_4G = 0b0010,
@@ -17,7 +13,7 @@ enum qma7981_full_scale_range_t : uint8_t
     RANGE_32G = 0b1111
 };
 
-enum qma7981_bandwidth_t : uint8_t
+enum qma7981_bandwidth_t
 {
     MCLK_DIV_BY_7695 = 0b000,
     MCLK_DIV_BY_3855 = 0b001,
@@ -28,7 +24,7 @@ enum qma7981_bandwidth_t : uint8_t
     MCLK_DIV_BY_61455 = 0b111
 };
 
-enum qma7981_clock_freq : uint8_t
+enum qma7981_clock_freq_t
 {
     CLK_500_KHZ = 0b0001,
     CLK_333_KHZ = 0b0000,
@@ -40,7 +36,7 @@ enum qma7981_clock_freq : uint8_t
     CLK_5_KHZ = 0b0111
 };
 
-enum qma7981_no_motion_duration_t : uint8_t
+enum qma7981_no_motion_duration_t
 {
     NO_MOTION_1_SEC = 0b000000,
     NO_MOTION_2_SEC = 0b000001,
@@ -55,7 +51,7 @@ enum qma7981_no_motion_duration_t : uint8_t
     NO_MOTION_4_MIN = 0b101110
 };
 
-enum qma7981_any_motion_samples_t : uint8_t
+enum qma7981_any_motion_samples_t
 {
     NUM_SAMPLES_1 = 0b00,
     NUM_SAMPLES_2 = 0b01,
@@ -63,55 +59,44 @@ enum qma7981_any_motion_samples_t : uint8_t
     NUM_SAMPLES_4 = 0b11
 };
 
-enum qma7981_mode_t : bool
+enum qma7981_mode_t
 {
     MODE_STANDBY = 0,
     MODE_ACTIVE = 1
 };
 
-enum qma7981_motion_detect_t : uint8_t
+enum qma7981_motion_detect_t
 {
     MOTION_DETECT_NOTHING = 0,
     MOTION_DETECT_ANY_MOTION = 1,
     MOTION_DETECT_NO_MOTION = 2
 };
-
-int16_t qma7981_get_accel_x();
-
-int16_t qma7981_get_accel_y();
-
-int16_t qma7981_get_accel_z();
-
-uint8_t qma7981_get_chip_id();
-
-void qma7981_set_full_scale_range(qma7981_full_scale_range_t range);
-
-void qma7981_set_bandwidth(qma7981_bandwidth_t bandwidth);
-
-void qma7981_set_clock_freq(qma7981_clock_freq freq);
-
-void qma7981_set_mode(qma7981_mode_t mode);
-
-void qma7981_set_interrupt_pin_1_source(bool significant_step, bool step_valid, bool hand_down,
-                                        bool hand_raise, bool significant_motion,
-                                        bool any_motion, bool data_ready, bool no_motion);
-
-void qma7981_set_interrupt_pin_1_type(bool open_drain, bool active_high);
-
-void qma7981_setup_any_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
-                                       qma7981_any_motion_samples_t samples,
-                                       uint8_t threshold);
-
-void qma7981_setup_no_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
-                                      qma7981_no_motion_duration_t duration,
-                                      uint8_t threshold);
-
-qma7981_motion_detect_t qma7981_get_motion_detected();
-
-void qma7981_disable_any_motion_detector();
-
-void qma7981_disable_no_motion_detector();
-
-void qma7981_setup_default();
+class QMA7981
+{
+public:
+    QMA7981();
+    void initialize_default();
+    int16_t get_accel_x();
+    int16_t get_accel_y();
+    int16_t get_accel_z();
+    uint8_t get_chip_id();
+    void set_full_scale_range(qma7981_full_scale_range_t range);
+    void set_bandwidth(qma7981_bandwidth_t bandwidth);
+    void set_clock_freq(qma7981_clock_freq_t freq);
+    void set_mode(qma7981_mode_t mode);
+    void set_interrupt_pin_1_source(bool significant_step, bool step_valid, bool hand_down,
+                                    bool hand_raise, bool significant_motion,
+                                    bool any_motion, bool data_ready, bool no_motion);
+    void set_interrupt_pin_1_type(bool open_drain, bool active_high);
+    void setup_any_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
+                                   qma7981_any_motion_samples_t samples,
+                                   uint8_t threshold);
+    void setup_no_motion_detector(bool x_enabled, bool y_enabled, bool z_enabled,
+                                  qma7981_no_motion_duration_t duration,
+                                  uint8_t threshold);
+    qma7981_motion_detect_t get_motion_detected();
+    void disable_any_motion_detector();
+    void disable_no_motion_detector();
+};
 
 #endif
